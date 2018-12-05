@@ -1,9 +1,65 @@
-// STORAGE CONTROLLER
+// LOCAL STORAGE CONTROLLER
 const StorageCtrl = (function(){
     
     // public methods
     return {
-          
+        storeItem: (item) => {
+            let items;
+            // check if any items in locSto
+            if (localStorage.getItem('items') === null) {
+                items = [];
+
+                // push new items
+                items.push(item);
+
+                // set items as strings to locSto
+                localStorage.setItem('items', JSON.stringify(items));
+            } else {
+                // bring back items as an object from locSto
+                items = JSON.parse(localStorage.getItem('items'));
+
+                // push new item
+                items.push(item);
+
+                // reset locSto
+                localStorage.setItem('items', JSON.stringify(items));
+            }
+        },
+        getItemsFromLocSto: (item) => {
+            let items;
+            
+            if (localStorage.getItem('items') === null) {
+                items = [];
+            } else {
+                items = JSON.parse(localStorage.getItem('items'));
+            }
+            return items;
+        },
+        updateItemStorage: (updatedItem) => {
+            let items = JSON.parse(localStorage.getItem('items'));
+
+            items.forEach((item, index) => {
+                if (updatedItem.id === item.id) {
+                    items.splice(index, 1, updatedItem);
+                }
+            });
+
+            localStorage.setItem('items', JSON.stringify(items));
+        },
+        deleteItemfromLocSto: (id) => {
+            let items = JSON.parse(localStorage.getItem('items'));
+
+            items.forEach((item, index) => {
+                if (id === item.id) {
+                    items.splice(index, 1);
+                }
+            });
+
+            localStorage.setItem('items', JSON.stringify(items));
+        },
+        clearAllItemsfromLocSto: () => {
+            localStorage.removeItem('items');
+        }
     }
 })();
 
@@ -19,11 +75,8 @@ const ItemCtrl = (function(){
 
     // data structure / state
     const data = {
-        items: [
-            // {id: 0, name: 'Steak Dinner', calories: 1100},
-            // {id: 1, name: 'Cookie', calories: 200},
-            // {id: 2, name: 'Eggs', calories: 350}
-        ],
+        // items: [{id: 0, name: 'Steak Dinner', calories: 1100},{id: 1, name: 'Cookie', calories: 200},{id: 2, name: 'Eggs', calories: 350}],
+        items: StorageCtrl.getItemsFromLocSto(),
         currentItem: null,
         totalCalories: 0
     }
@@ -109,7 +162,6 @@ const ItemCtrl = (function(){
 
             // set ttl cal in the data structure
             data.totalCalories = total;
-
             return data.totalCalories;
         },
         logData: () => {
@@ -249,7 +301,7 @@ const UICtrl = (function(){
 })();
 
 // MAIN APP CONTROLLER
-const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
+const AppCtrl = (function(ItemCtrl, StorageCtrl, UICtrl){                
     
     // load all event listeners
     const loadEventListeners = () => {
@@ -284,7 +336,6 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
 
         // clear items event
         document.querySelector(UISelectors.clearBtn).addEventListener('click', clearAllItemsClick);
-
     }; 
 
     // add item submit
@@ -306,10 +357,12 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
             // show ttl cals in the UI
             UICtrl.showTotalCals(totalCalories);
 
+            // store in locSto
+            StorageCtrl.storeItem(newItem);
+
             // clear inputs
             UICtrl.clearInputs();
         }
-
         e.preventDefault();
     };
 
@@ -334,7 +387,6 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
             // add item to form in the DOM
             UICtrl.addItemToForm();
         }
-
         e.preventDefault();
     };
 
@@ -354,9 +406,10 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
 
         // show ttl cals in the UI
         UICtrl.showTotalCals(totalCalories);
-        
-        UICtrl.clearEditState();
 
+        // update locSto
+        StorageCtrl.updateItemStorage(updatedItem);
+        UICtrl.clearEditState();
         e.preventDefault();
     };
 
@@ -370,7 +423,9 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
 
         // delete from UI
         UICtrl.deleteListItem(currentItem.id);
-        
+
+        // delete item from locSto
+        StorageCtrl.deleteItemfromLocSto(currentItem.id);
         e.preventDefault();
     };
 
@@ -383,6 +438,9 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
         const totalCalories = ItemCtrl.getTotalCalories();
         UICtrl.showTotalCals(totalCalories);
         UICtrl.removeItems();
+
+        // clear all items from locSto
+        StorageCtrl.clearAllItemsfromLocSto();
 
         // hide ul
         UICtrl.hideList();
@@ -416,7 +474,7 @@ const AppCtrl = (function(ItemCtrl, UICtrl){                // add StorageCtrl
            loadEventListeners();
         }
     }
-})(ItemCtrl, UICtrl);                                       // add StorageCtrl
+})(ItemCtrl, StorageCtrl, UICtrl);                                       
 
 // initialize the app
 AppCtrl.init();
